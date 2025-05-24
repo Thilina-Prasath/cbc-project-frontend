@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { sampleProduct } from "../../assets/sampleData";
+import { sampleProduct } from "../../assets/sampleData.js";
 import axios from "axios";
+import { Link } from "react-router-dom";
 
 export default function AdminProductsPage() {
 	const [products, setProducts] = useState(sampleProduct);
@@ -12,10 +13,11 @@ export default function AdminProductsPage() {
                 setProducts(res.data)  //setproduct = setfuction
             });
         },[]  //useeffect dn kot[] mek aniwryenm dnn on
-    );
+    )
 
 	return (
 		<div className="w-full h-full  max-h-full overflow-y-scroll bg-red-900 relative">
+			<Link to="/admin/add-product" className="absolute text-5xl cursor-pointer bottom-5 right-4 bg-red-500 p-2 text-white py-2 px-4 rounded text-center flex fleex-center items-center">+</Link>   {/* add product.jsx ek link krl thiyenne*/}
             <table className="w-full text-center">
 				<thead>
 					<tr>
@@ -35,8 +37,8 @@ export default function AdminProductsPage() {
 								<td>{item.productId}</td>
 								<td>{item.name}</td>
 								<td>
-									<img src={item.images[0]} className="w-[50px] h-[50px]" />
-								</td>
+                                    <img src={item.images && item.images.length > 0 ? item.images[0] : '/placeholder-image.jpg'} className="w-[50px] h-[50px]" />
+                                </td>
 								<td>{item.labelledPrice}</td>
 								<td>{item.price}</td>
 								<td>{item.stock}</td>
@@ -48,3 +50,4 @@ export default function AdminProductsPage() {
         </div>
     )
 }    
+
