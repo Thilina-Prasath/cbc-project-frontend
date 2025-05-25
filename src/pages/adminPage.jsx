@@ -1,6 +1,7 @@
 import { Link, Route, Routes } from "react-router-dom";
 import AdminProductsPage from "./admin/productsPage";
 import AddProductPage from "./admin/addProduct";
+import EditProductPage from "./admin/editProductPage";
 
 
 export default function AdminPage(){
@@ -20,6 +21,7 @@ export default function AdminPage(){
                     <Route path="/orders" element={<h1>Orders</h1>}/>
                     <Route path="/reviews" element={<h1>Reviews</h1>}/>
                     <Route path="/add-product" element={<AddProductPage/>}/>
+                    <Route path="/edit-product" element={<EditProductPage/>}/>
                 </Routes>
             </div>
 

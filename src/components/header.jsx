@@ -1,12 +1,23 @@
+import { Link, useNavigate } from "react-router-dom";
 import UserData from "./userData";
 
-export default function Header(){   //api hdnn blporoththuwen tag eke nama thmi Header.kmthi nmk denn plwn.mek aniwaryenm dnn on
-    console.log ("header component loading..")
-    return (    
-        <div className="bg-red-500">   {/*apit ekm clz eke clz godk hdnn plwn space thiy thiy*/}
-            <h1 className="text-blue-950">hiiii</h1>         {/*tailwind css eke nthi mkk hri api denw nm manualy [] athule dnn plwn*/}
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Corrupti, cupiditate.</p>
-            <UserData></UserData>
-        </div>
+export default function Header(){
+    const navigate = useNavigate()
+    console.log("Header component loading...")
+    return(
+        <header className="w-full h-[80px] shadow-2xl flex">
+            <img onClick={()=>{
+                navigate("/")
+            }} src="/logo.png" alt="Logo" className="w-[80px] h-[80px] object-cover cursor-pointer"/>     {/*object-cover ek mgin logo ek hriyt thiyeno */}
+            <div className="w-[calc(100%-160px)] h-full  flex justify-center items-center">
+                <Link to="/" className=" text-[20px] font-bold mx-2">Home</Link>
+                <Link to="/products" className=" text-[20px] font-bold mx-2">Products</Link>
+                <Link to="/about" className=" text-[20px] font-bold mx-2">About</Link>
+                <Link to="/contact" className=" text-[20px] font-bold mx-2">Contact</Link>
+
+            </div>
+            <div className="w-[80px] bg-blue-600">
+            </div>
+        </header>
     )
 }
