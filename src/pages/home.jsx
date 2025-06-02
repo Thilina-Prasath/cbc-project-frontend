@@ -1,8 +1,8 @@
 import { Route, Routes } from "react-router-dom";
 import Header from "../components/header";
 import ProductPage from "./client/productPage";
-//import ProductOverviewPage from "./client/productOverview";
-//import CartPage from "./client/cart";
+import ProductOverviewPage from "./client/productOverview";
+import CartPage from "./client/cart";
 
 export default function HomePage(){
     return(
@@ -14,8 +14,8 @@ export default function HomePage(){
                     <Route path="/products" element={<ProductPage/>}/>
                     <Route path="/about" element={<h1>About</h1>}/>
                     <Route path="/contact" element={<h1>Contact</h1>}/>
-                  {/*  <Route path="/cart" element={<CartPage/>}/>
-                    <Route path="/overview/:id" element={<ProductOverviewPage/>}/>  */}
+                    <Route path="/cart" element={<CartPage/>}/> 
+                    <Route path="/overview/:id" element={<ProductOverviewPage/>}/>   {/* /overview/:id  mekn kiynne /overview ek pssen id ekk enw kiyl kiynne. :id mek nodemmoth wenne product crd click krl giym penne 404 Not Found mek */}  
                     <Route path="/*" element={<h1>404 Not Found</h1>}/>    {/* werdi route ekkt giyoth mek penno e kiynne Home,products,about,contact,cart,overview nethuw wen ekkin awoth mek penno */}
                 </Routes>
             </div>

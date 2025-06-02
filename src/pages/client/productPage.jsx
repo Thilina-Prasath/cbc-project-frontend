@@ -10,6 +10,8 @@ export default function ProductPage(){
         ()=>{
             if(isLoading){
                 axios.get(import.meta.env.VITE_BACKEND_URL + "/api/products").then(
+                                
+
                     (res)=>{                       
                         setProducts(res.data)
                         setIsLoading(false)
