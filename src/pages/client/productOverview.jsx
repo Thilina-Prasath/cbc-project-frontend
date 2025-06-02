@@ -45,7 +45,7 @@ export default function ProductOverviewPage() {
 						<ImageSlider images={product.images} />
 					</div>
 					<div className="w-[50%] flex justify-center items-center h-full">
-                        <div className="w-[500px] h-[500px] flex flex-col  items-center">
+                        <div className="w-[500px] h-[600px] flex flex-col  items-center">
                             <h1 className="w-full text-center text-4xl text-secondary font-semibold">{product.name}
                                 {
                                     product.altNames && product.altNames.map((altName,index)=>{
