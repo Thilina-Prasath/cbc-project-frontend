@@ -1,10 +1,12 @@
 export function getCart() {           //cart ek gnn funtion ekk hdno
 	let cart = localStorage.getItem("cart");
-    cart = JSON.parse(cart);
 	if (cart == null) {
 		cart = [];
 		localStorage.setItem("cart", JSON.stringify(cart));   //cart ek save krgnno
-	}
+    
+	}else{
+            cart = JSON.parse(cart);
+    }
 	return cart;
 }
 
@@ -49,4 +51,13 @@ export function addToCart(product, qty) {              //cart ekkt product ekk a
     localStorage.setItem("cart", JSON.stringify(cart));          // aphu seryk save krno carte ek
 }
 
+export function getTotal(){
+    let cart = getCart();
 
+    let total = 0;
+
+    for(let i=0;i<cart.length;i++){
+        total += cart[i].price * cart[i].qty;
+    }
+    return total;
+}
