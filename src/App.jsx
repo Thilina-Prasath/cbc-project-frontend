@@ -11,7 +11,7 @@ import ForgetPasswordPage from "./pages/forgetPassword"
 function App() {
 
   return (
-    <GoogleOAuthProvider clientId = "316269321757-orclagd9f2iocsm01hc9q4f59nu2rlcr.apps.googleusercontent.com">
+    <GoogleOAuthProvider VITE_GOOGLE_CLIENT_ID = "316269321757-orclagd9f2iocsm01hc9q4f59nu2rlcr.apps.googleusercontent.com">
     <BrowserRouter>
     <div>
       <Toaster position="top-center"/>  {/*notification ek enn on position ek.*/}
