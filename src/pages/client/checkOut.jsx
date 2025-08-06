@@ -86,8 +86,8 @@ export default function CheckoutPage() {
 	}
 
 	return (
-		<div className="w-full h-full flex flex-col items-center pt-4 relative ">
-			<div className="w-[320px]  shadow-2xl absolute top-1 right-1 flex flex-col justify-center items-center p-1 gap-10">
+		<div className="w-full md:w-full h-full flex flex-col items-center pt-4 relative ">
+			<div className="z-50 hidden  w-[200px] h-80 shadow-2xl absolute bottom-1 md:top-1 right-1 md:flex flex-col justify-center items-center gap-2">
 				<p className="text-2xl text-secondary font-bold">
 					Total:
 					<span className="text-accent font-bold mx-2">
@@ -121,7 +121,7 @@ export default function CheckoutPage() {
 				return (
 					<div
 						key={item.productId}
-						className="w-[600px] my-4 h-[100px] rounded-tl-3xl rounded-bl-3xl bg-primary shadow-2xl flex flex-row relative justify-center items-center"
+						className="w-[70%] md:w-[600px] my-4 md:h-[100px] rounded-tl-3xl rounded-bl-3xl bg-primary shadow-2xl flex flex-col md:flex-row relative justify-center items-center p-2 md:p-0"
 					>
 						<img
 							src={item.image}
@@ -191,6 +191,38 @@ export default function CheckoutPage() {
 					</div>
 				);
 			})}
+
+			<div className="z-50 md:hidden border flex w-full h-[180px] shadow-2xl right-1  flex-col justify-center items-center gap-2">
+				<p className="text-2xl text-secondary font-bold">
+					Total:
+					<span className="text-accent font-bold mx-2">
+						{getTotal().toFixed(2)}
+					</span>
+				</p>
+				<div>
+					<input
+						type="text"
+						placeholder="Phone Number"
+						className="w-full h-[40px] px-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
+						value={phoneNumber}
+						onChange={(e) => setPhoneNumber(e.target.value)}
+					/>
+					<input
+						type="text"
+						placeholder="Address"
+						className="w-full h-[40px] px-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-accent mt-2"
+						value={address}
+						onChange={(e) => setAddress(e.target.value)}
+					/>
+				</div>
+				<button
+					className="text-white bg-accent px-4 py-2 rounded-lg font-bold hover:bg-secondary transition-all duration-300"
+					onClick={placeOrder}
+				>
+					Place Order
+				</button>
+			</div>
+			
 		</div>
 	);
 }
