@@ -11,10 +11,10 @@ import ForgetPasswordPage from "./pages/forgetPassword"
 function App() {
 
   return (
-    <GoogleOAuthProvider VITE_GOOGLE_CLIENT_ID = "316269321757-orclagd9f2iocsm01hc9q4f59nu2rlcr.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId = "316269321757-orclagd9f2iocsm01hc9q4f59nu2rlcr.apps.googleusercontent.com">
     <BrowserRouter>
     <div>
-      <Toaster position="top-center"/>  {/*notification ek enn on position ek.*/}
+      <Toaster position="top-right"/>  {/*notification ek enn on position ek.*/}
       <Routes path="/*">         {/*Dynamic kotuwk hdnn gththe routes.ek athule thmi route thiyenne*/}
           <Route path='/login' element={<LoginPage/>}/>
           <Route path="/forget" element={<ForgetPasswordPage/>}/>

@@ -86,8 +86,6 @@ export default function LoginPage(){
                     <button onClick={handleLogin}className="w-[300px] h-[50px] bg-[#c3efe9] rounded-[20px] my-[20px] text-white cursor-pointer">login</button>
 
                     {/*google login*/}
-
-                    <button onClick={handleLogin}  className="w-[300px] cursor-pointer h-[50px] bg-[#c3efe9] rounded-[20px] my-[20px] text-[20px] font-bold text-white">Login</button>
                     <button onClick={googleLogin} className="w-[300px] cursor-pointer h-[50px] flex justify-center items-center bg-[#c3efe9] rounded-[20px] my-[20px] text-[20px] font-bold text-white" >
                     <GrGoogle className="text-xl text-gray-600 cursor-pointer hover:text-gray-800" />  {/*google logo*/}
                     <span className="text-gray-600 text-xl font-semibold">Login with Google</span>
