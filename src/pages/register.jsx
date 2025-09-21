@@ -20,7 +20,7 @@ export default function RegisterPage() {
             })
 
             toast.success("Registration Successful")
-            navigate("/login")
+            navigate("/")
         } catch (e) {
             toast.error(e.response?.data?.message || "Registration Failed")
         }

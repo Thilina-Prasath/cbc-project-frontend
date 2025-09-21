@@ -22,7 +22,6 @@ function App() {
           <Route path="/testing" element={<TestPage/>}/>
           <Route path='/admin/*' element={<AdminPage/>}/>      {/*/admin/* admin ekth ekk adminge psse mkk hri deyk ekthu wenw nm /* mehm dno*/}
           <Route path="/*" element={<HomePage/>}/>       {/*Route ekk kiynne ek awsthwkdi penn on deyk*/}
-
           {/*<Route path='/*' element={<h1>404 Not Found</h1>}/>      kisim url ekkt gelpenne nethi ekkt awm */}
 
       </Routes>

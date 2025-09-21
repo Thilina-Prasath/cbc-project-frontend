@@ -72,6 +72,8 @@ export default function LoginPage(){
                     }
 
                     value={email}
+                    type="email"
+                    placeholder="email"
 
                     className="w-[300px] h-[50px] border border-[#c3efe9] rounded-[20px] my-[20px]"/>
                     <input  onChange={
@@ -82,7 +84,9 @@ export default function LoginPage(){
 
                     value={password}
                     
-                    type="password" className="w-[300px] h-[50px] border border-[#c3efe9] rounded-[20px] my-[20px]" />
+                    type="password"
+                    placeholder="password"
+                    className="w-[300px] h-[50px] border border-[#c3efe9] rounded-[20px] my-[20px]" />
                     <button onClick={handleLogin}className="w-[300px] h-[50px] bg-[#c3efe9] rounded-[20px] my-[20px] text-white cursor-pointer">login</button>
 
                     {/*google login*/}
@@ -90,6 +94,8 @@ export default function LoginPage(){
                     <GrGoogle className="text-xl text-gray-600 cursor-pointer hover:text-gray-800" />  {/*google logo*/}
                     <span className="text-gray-600 text-xl font-semibold">Login with Google</span>
                     </button>
+
+                    <span className="text-gray-600 text-sm mt-[20px]">Don't have an account? <a href="/signup" className="text-[#c3efe9] underline">SIGNIN</a></span>  
 
 
 
