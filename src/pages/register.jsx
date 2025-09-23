@@ -90,8 +90,9 @@ export default function RegisterPage() {
                 email: email.trim(),
                 password
             })
+
             toast.success("Registration successful! Welcome aboard!")
-            navigate("/")
+            navigate("/login")
         } catch (e) {
             toast.error(e.response?.data?.message || "Registration failed. Please try again.")
         } finally {
