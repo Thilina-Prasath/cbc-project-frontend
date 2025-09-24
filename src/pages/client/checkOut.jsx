@@ -7,7 +7,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 export default function CheckoutPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    console.log(location.state?.cart);
+    console.log("Cart from location state:", location.state?.cart);
 
     const [cart, setCart] = useState(location.state?.cart || []);
     const [phoneNumber, setPhoneNumber] = useState("");
@@ -89,15 +89,51 @@ export default function CheckoutPage() {
         return Object.keys(newErrors).length === 0;
     }
 
+    function validateCartData() {
+        const invalidItems = cart.filter(item => {
+            return !item.productId || 
+                   !item.qty || 
+                   item.qty <= 0 || 
+                   typeof item.productId !== 'string';
+        });
+        
+        if (invalidItems.length > 0) {
+            console.error("Invalid cart items:", invalidItems);
+            return false;
+        }
+        
+        return true;
+    }
+
     async function placeOrder() {
+        console.log("=== STARTING ORDER PLACEMENT ===");
+        console.log("Cart data:", cart);
+        console.log("Form data:", {
+            fullName,
+            email,
+            phoneNumber,
+            address,
+            city,
+            postalCode
+        });
+        
         if (!validateForm()) {
+            console.log("❌ Form validation failed");
             toast.error("Please fill in all required fields correctly");
+            return;
+        }
+        
+        if (!validateCartData()) {
+            console.log("❌ Cart validation failed");
+            toast.error("Invalid items in cart. Please refresh and try again.");
             return;
         }
 
         setIsPlacingOrder(true);
 
         const token = localStorage.getItem("token");
+        console.log("Token check:", token ? `Token exists (${token.substring(0, 20)}...)` : "❌ No token found");
+        
         if (!token) {
             toast.error("Please login to place order");
             setIsPlacingOrder(false);
@@ -109,28 +145,31 @@ export default function CheckoutPage() {
                 productId: item.productId,
                 qty: item.qty,
             })),
-            customerInfo: {
-                fullName,
-                email,
-                phone: phoneNumber,
-                address,
-                city,
-                postalCode,
-            }
+            name: fullName,        // Backend expects 'name' not 'fullName'
+            email: email,
+            phone: phoneNumber,
+            address: `${address}, ${city}, ${postalCode}`, // Combine address fields
         };
 
+        const apiUrl = import.meta.env.VITE_BACKEND_URL + "/api/orders";
+
+        // Enhanced debug logs
+        console.log("=== API REQUEST DETAILS ===");
+        console.log("🌐 API URL:", apiUrl);
+        console.log("📦 Order payload:", JSON.stringify(orderInformation, null, 2));
+        console.log("🔑 Authorization header:", `Bearer ${token.substring(0, 20)}...`);
+        console.log("📨 Making POST request...");
+
         try {
-            const res = await axios.post(
-                import.meta.env.VITE_BACKEND_URL + "/api/orders",
-                orderInformation,
-                {
-                    headers: {
-                        Authorization: "Bearer " + token,
-                    },
-                }
-            );
+            const res = await axios.post(apiUrl, orderInformation, {
+                headers: {
+                    Authorization: "Bearer " + token,
+                    "Content-Type": "application/json"
+                },
+            });
+            
+            console.log("✅ SUCCESS! Response:", res.data);
             toast.success("Order placed successfully!");
-            console.log(res.data);
             
             // Clear form and redirect
             setCart([]);
@@ -139,10 +178,60 @@ export default function CheckoutPage() {
             }, 2000);
             
         } catch (err) {
-            console.log(err);
-            toast.error(err.response?.data?.message || "Error placing order");
+            console.log("=== ERROR DETAILS ===");
+            console.error("❌ Full error object:", err);
+            
+            if (err.response) {
+                console.log("📤 Request was made and server responded with error");
+                console.error("📊 Status:", err.response.status);
+                console.error("📋 Response data:", err.response.data);
+                console.error("📑 Response headers:", err.response.headers);
+                console.error("⚙️ Request config:", err.config);
+                
+                // Try to extract more details from response
+                if (err.response.data) {
+                    console.log("🔍 Detailed server response:", JSON.stringify(err.response.data, null, 2));
+                }
+            } else if (err.request) {
+                console.log("📤 Request was made but no response received");
+                console.error("📨 Request details:", err.request);
+            } else {
+                console.log("⚠️ Error in setting up request");
+                console.error("Error message:", err.message);
+            }
+            
+            // More detailed error handling
+            let errorMessage = "Failed to create order";
+            
+            if (err.response) {
+                if (err.response.data?.message) {
+                    errorMessage = `Server error: ${err.response.data.message}`;
+                } else if (err.response.data?.error) {
+                    errorMessage = `Server error: ${err.response.data.error}`;
+                } else if (err.response.status === 401) {
+                    errorMessage = "Authentication failed. Please login again.";
+                    localStorage.removeItem("token");
+                    navigate("/login");
+                    return;
+                } else if (err.response.status === 403) {
+                    errorMessage = "Access denied. Please check your permissions.";
+                } else if (err.response.status === 404) {
+                    errorMessage = "Order endpoint not found. Please contact support.";
+                } else if (err.response.status === 500) {
+                    errorMessage = `Server internal error (500). Check backend logs.`;
+                } else {
+                    errorMessage = `Server error: ${err.response.status}`;
+                }
+            } else if (err.request) {
+                errorMessage = "Network error. Please check your connection and backend server.";
+            }
+            
+            console.log("🚨 Final error message:", errorMessage);
+            toast.error(errorMessage);
+            
         } finally {
             setIsPlacingOrder(false);
+            console.log("=== ORDER PLACEMENT FINISHED ===");
         }
     }
 
@@ -309,11 +398,14 @@ export default function CheckoutPage() {
                             
                             <div className="space-y-4">
                                 {cart.map((item, index) => (
-                                    <div key={item.productId} className="bg-gray-50 rounded-xl p-4 flex items-center space-x-4">
+                                    <div key={index} className="bg-gray-50 rounded-xl p-4 flex items-center space-x-4">
                                         <img 
                                             src={item.image} 
                                             alt={item.name}
                                             className="w-16 h-16 object-cover rounded-lg"
+                                            onError={(e) => {
+                                                e.target.src = '/placeholder-image.png'; // Fallback image
+                                            }}
                                         />
                                         
                                         <div className="flex-1">
