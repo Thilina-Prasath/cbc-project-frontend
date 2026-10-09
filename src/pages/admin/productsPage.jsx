@@ -1,232 +1,300 @@
-import { useEffect, useState } from "react";
-import { sampleProduct } from "../../assets/sampleData.js";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import { FaEdit, FaTrash } from "react-icons/fa";
-import toast from "react-hot-toast";;
+import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
+import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiSearch, FiPackage, FiBox, FiTag } from "react-icons/fi";
+
 export default function AdminProductsPage() {
-	const [products, setProducts] = useState(sampleProduct);
-	const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
-	const navigate = useNavigate();
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          toast.error("Please login first");
+          return;
+        }
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/products`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        setProducts(Array.isArray(res.data) ? res.data : []);
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load products");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
-	useEffect(() => {
-		if (isLoading) {
-			axios
-				.get(import.meta.env.VITE_BACKEND_URL + "/api/products")
-				.then((res) => {
-					setProducts(res.data);
-					setIsLoading(false);
-				})
-				.catch(() => {
-					toast.error("Failed to load products");
-					setIsLoading(false);
-				});
-		}
-	}, [isLoading]);
+  const deleteProduct = async (productId) => {
+    if (!window.confirm("Delete this product permanently?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/products/${productId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      toast.success("Product deleted successfully");
+      setProducts((prev) =>
+        prev.filter((product) => product.productId !== productId),
+      );
+    } catch (error) {
+      toast.error("Failed to delete product");
+    }
+  };
 
-	function deleteProduct(productId) {
-		const token = localStorage.getItem("token");
-		if (!token) {
-			toast.error("Please login first");
-			return;
-		}
-		axios
-			.delete(import.meta.env.VITE_BACKEND_URL + "/api/products/" + productId, {
-				headers: {
-					Authorization: "Bearer " + token,
-				},
-			})
-			.then(() => {
-				toast.success("Product deleted successfully");
-				setIsLoading(true);
-			})
-			.catch((e) => {
-				toast.error(e.response?.data?.message || "Failed to delete product");
-			});
-	}
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) =>
+      [product.name, product.category, product.subCategory, product.productId]
+        .join(" ")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()),
+    );
+  }, [products, searchQuery]);
 
-	return (
-		<div className="relative w-full h-full max-h-full overflow-y-auto p-4 font-[var(--font-main)]">
-			<Link
-				to="/admin/add-product"
-				className="fixed bottom-6 right-6 bg-[var(--color-accent)] hover:bg-[var(--color-secondary)] text-white font-bold py-3 px-5 rounded-full shadow-lg transition duration-300"
-			>
-				+ Add Product
-			</Link>
+  const lowStockCount = products.filter(
+    (product) =>
+      Number(product.stock || 0) > 0 && Number(product.stock || 0) <= 5,
+  ).length;
 
-			{isLoading ? (
-				<div className="w-full h-full flex justify-center items-center">
-					<div className="w-16 h-16 border-4 border-gray-300 border-t-[var(--color-accent)] rounded-full animate-spin"></div>
-				</div>
-			) : (
-				<div className="overflow-x-auto">
-					
-					<table className="w-full text-center border border-gray-200 shadow-md rounded-lg overflow-hidden">
-						<thead className="bg-[var(--color-accent)] text-white">
-							<tr>
-								<th className="py-3 px-2">Product ID</th>
-								<th className="py-3 px-2">Name</th>
-								<th className="py-3 px-2">Image</th>
-								<th className="py-3 px-2">Labelled Price</th>
-								<th className="py-3 px-2">Price</th>
-								<th className="py-3 px-2">Stock</th>
-								<th className="py-3 px-2">Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{products.map((item, index) => (
-								<tr
-									
-									key={index}
-									className={`${
-										index % 2 === 0
-											? "bg-[var(--color-primary)]"
-											: "bg-gray-100"
-									} hover:bg-gray-200 transition`}
-								>
-									<td className="py-2 px-2">{item.productId}</td>
-									<td className="py-2 px-2">{item.name}</td>
-									<td className="py-2 px-2">
-										<img
-											src={item.images[0]}
-											alt={item.name}
-											className="w-12 h-12 object-cover rounded"
-										/>
-									</td>
-									<td className="py-2 px-2">{item.labelledPrice}</td>
-									<td className="py-2 px-2">{item.price}</td>
-									<td className="py-2 px-2">{item.stock}</td>
-									<td className="py-2 px-2">
-										<div className="flex justify-center space-x-3">
-											<button
-												onClick={() => deleteProduct(item.productId)}
-												className="text-red-500 hover:text-red-700 transition"
-											>
-												<FaTrash size={18} />
-											</button>
-											<button
-												onClick={() =>
-													navigate("/admin/edit-product", {
-														state: item,
-													})
-												}
-												className="text-blue-500 hover:text-blue-700 transition"
-											>
-												<FaEdit size={18} />
-											</button>
-										</div>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-			)}
-		</div>
-	);
+  const outOfStockCount = products.filter(
+    (product) => Number(product.stock || 0) <= 0,
+  ).length;
+
+  return (
+    <div className="min-h-screen bg-[#FAF7F2] text-zinc-900 p-3 sm:p-4 md:p-6 lg:p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-7xl mx-auto"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-white px-4 py-1.5 sm:px-5 sm:py-2 rounded-full shadow-sm text-xs sm:text-sm font-bold text-[#9b6b43]">
+              <FiPackage />
+              Product Catalog
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mt-3 sm:mt-4 tracking-tight">
+              Products
+            </h1>
+
+            <p className="text-sm sm:text-base text-zinc-500 mt-2">
+              Manage product details, prices, images, stock and categories.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full lg:w-auto">
+            <div className="relative w-full lg:w-96">
+              <FiSearch className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white border border-zinc-100 rounded-xl sm:rounded-2xl pl-11 sm:pl-12 pr-4 py-3 sm:py-4 outline-none focus:border-[#9b6b43] shadow-sm transition text-sm sm:text-base"
+              />
+            </div>
+
+            <Link
+              to="/admin/add-product"
+              className="bg-zinc-950 text-white px-5 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-[#9b6b43] transition text-sm sm:text-base whitespace-nowrap"
+            >
+              <FaPlus />
+              Add Product
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <SummaryCard title="Total Products" value={products.length} />
+          <SummaryCard title="Low Stock" value={lowStockCount} />
+          <SummaryCard title="Out of Stock" value={outOfStockCount} />
+        </div>
+
+        <section className="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-zinc-100 shadow-sm overflow-hidden">
+          <div className="p-4 sm:p-6 border-b border-zinc-100">
+            <h2 className="text-xl sm:text-2xl font-black">Product List</h2>
+            <p className="text-xs sm:text-sm text-zinc-500 mt-1">
+              Showing {filteredProducts.length} items in catalog.
+            </p>
+          </div>
+
+          <div className="p-3 sm:p-5 md:p-6">
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                <div className="flex justify-center py-20 sm:py-32">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 border-4 border-zinc-200 border-t-[#9b6b43] rounded-full animate-spin" />
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-16 sm:py-24 px-4"
+                >
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#FAF7F2] flex items-center justify-center mx-auto mb-4 sm:mb-5">
+                    <FiBox className="text-2xl sm:text-3xl text-[#9b6b43]" />
+                  </div>
+
+                  <h3 className="text-xl sm:text-2xl font-black">
+                    No products found
+                  </h3>
+                  <p className="text-sm sm:text-base text-zinc-500 mt-2">
+                    Try searching with another product name or ID.
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="products"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    visible: { transition: { staggerChildren: 0.04 } },
+                  }}
+                  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 md:gap-6"
+                >
+                  {filteredProducts.map((product) => (
+                    <motion.div
+                      key={product.productId}
+                      variants={{
+                        hidden: { opacity: 0, y: 24 },
+                        visible: { opacity: 1, y: 0 },
+                      }}
+                      className="bg-[#FAF7F2] border border-zinc-100 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden hover:bg-white hover:shadow-md transition group"
+                    >
+                      <div className="relative h-48 sm:h-56 md:h-64 bg-white overflow-hidden">
+                        <img
+                          src={product.images?.[0] || "/placeholder.jpg"}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        />
+
+                        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-white/90 backdrop-blur px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-black text-[#9b6b43]">
+                          {product.category || "Product"}
+                        </div>
+
+                        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-zinc-950 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-mono">
+                          {product.productId}
+                        </div>
+                      </div>
+
+                      <div className="p-4 sm:p-6">
+                        <div className="flex items-start justify-between gap-3 sm:gap-4">
+                          <div className="min-w-0">
+                            <h3 className="font-black text-base sm:text-xl line-clamp-2">
+                              {product.name}
+                            </h3>
+
+                            <p className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-zinc-500 mt-1.5 sm:mt-2">
+                              <FiTag className="flex-shrink-0" />
+                              <span className="truncate">
+                                {product.subCategory ||
+                                  product.category ||
+                                  "No category"}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <p className="text-lg sm:text-2xl font-black">
+                              Rs. {Number(product.price || 0).toLocaleString()}
+                            </p>
+                            {product.labelledPrice && (
+                              <p className="text-[10px] sm:text-xs line-through text-zinc-400">
+                                Rs.{" "}
+                                {Number(
+                                  product.labelledPrice || 0,
+                                ).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-4 sm:mt-6">
+                          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-zinc-100">
+                            <p className="text-[10px] sm:text-xs text-zinc-500">
+                              Stock
+                            </p>
+                            <p className="font-black text-sm sm:text-base">
+                              {product.stock || 0}
+                            </p>
+                          </div>
+
+                          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-zinc-100">
+                            <p className="text-[10px] sm:text-xs text-zinc-500">
+                              Status
+                            </p>
+                            <p
+                              className={`font-black text-sm sm:text-base ${
+                                Number(product.stock || 0) > 0
+                                  ? "text-emerald-600"
+                                  : "text-red-500"
+                              }`}
+                            >
+                              {Number(product.stock || 0) > 0
+                                ? "Available"
+                                : "Out"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
+                          <button
+                            onClick={() => deleteProduct(product.productId)}
+                            className="flex-1 py-3 sm:py-4 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl sm:rounded-2xl font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 text-sm"
+                          >
+                            <FaTrash className="text-xs sm:text-sm" />
+                            Delete
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              navigate("/admin/edit-product", {
+                                state: product,
+                              })
+                            }
+                            className="flex-1 py-3 sm:py-4 bg-zinc-950 text-white font-bold rounded-xl sm:rounded-2xl hover:bg-[#9b6b43] transition flex items-center justify-center gap-1.5 sm:gap-2 text-sm"
+                          >
+                            <FaEdit className="text-xs sm:text-sm" />
+                            Edit
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </section>
+      </motion.div>
+    </div>
+  );
 }
 
+function SummaryCard({ title, value }) {
+  return (
+    <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 border border-zinc-100 shadow-sm">
+      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#FAF7F2] flex items-center justify-center mb-3 sm:mb-4">
+        <FiPackage className="text-lg sm:text-xl text-[#9b6b43]" />
+      </div>
 
-
-// import { useEffect, useState } from "react";
-// import { sampleProduct } from "../../assets/sampleData.js";
-// import axios from "axios";
-// import { Link, useNavigate } from "react-router-dom";
-// import { FaEdit, FaTrash } from "react-icons/fa";
-// import toast from "react-hot-toast";
-
-// export default function AdminProductsPage() {
-// 	const [products, setProducts] = useState(sampleProduct);
-// 	const [isloading, setIsLoading] = useState(true);    //me page ek ptn gddi load wewi thiyenne eki true kiyl dnne
-// 	const navigate = useNavigate();        //useNavigate use krnne page athr maru wenn
-
-//     useEffect(   //setfunction ekk nis ekpr godk run weno ek wlwkw gnn useeffect fuction ekk deno eken  ek pr eki run wenne
-//         () => {
-// 			if (isloading == true){        //isloading ek true nm withri axios ek athule thiyen fuction ek run wenne false nm run wenne ne
-// 				axios.get(import.meta.env.VITE_BACKEND_URL + "/api/products").then((res) => {     //axios ekn krnne db ekt gihin data tik load kr gnn ek
-//                 console.log(res.data);
-//                 setProducts(res.data)  //setproduct = setfuction
-// 				setIsLoading(false);  // ptn gniddi load wewi thiyenne load wel iwr un kiyl kiynn thmi  false  dnne
-//             });
-// 			}        
-            
-//         },[isloading]  //useeffect dn kot[] mek aniwryenm dnn on,mehem arry ekkt kiynne deffendencis arry kiyl,isloading eke value ek wens unoth e kiynne true hri false hri unoth useEffect ek athule thiyen axios ek aphu run weno
-//     )            // page ekk table load krn kot ekt aniwaryenm thiyenn on table ekt adala arry ekk [], loader ekk,useEffect ekk on weno athule if ekk thiyen saha diffendency arry ekk on loader ek dnn
-// 	  //meken wenne api product ui eke pennana product ekk delete klm e delete krn ek product ek delete unth ui eke penno.ek nis api manually page ek refresh klm thmi ek ethnin pennana ek nethi wenne.mek demm passe auto load wimk weno.ek nis api mnually refresh krnn one ne (13-25)
- 
-// 	function deleteProduct(productId) {            //deleteProduct ek athult denne productId ek withri
-// 		const token = localStorage.getItem("token");
-// 		if (token == null) {
-// 			toast.error("Please login first");
-// 			return;
-// 		}
-// 		axios.delete(import.meta.env.VITE_BACKEND_URL + "/api/products/" + productId, {             //delete request ekk ywno backend ekt agata productid ek dl,function ek run unoth adala productid ek agata dl ywno
-// 				headers: {
-// 					Authorization: "Bearer " + token,       //Bearer token ekth dl ywnne
-// 				},
-// 			})
-// 			.then(() => {
-// 				toast.success("Product deleted successfully");
-// 				setIsLoading(true);
-// 			})
-// 			.catch((e) => {
-// 				toast.error(e.response.data.message);
-// 			});
-// 	}
-
-
-
-// 	return (
-// 		<div className="w-full h-full  max-h-full overflow-y-scroll relative">
-// 			<Link to="/admin/add-product" className="absolute text-5xl cursor-pointer bottom-5 right-4 bg-red-500 p-2 text-white py-2 px-4 rounded text-center flex fleex-center items-center">+</Link>   {/* add product.jsx ek link krl thiyenne*/}
-//             { isloading ?      //isloading ek load wewi nm thiyenne Loading ek penn ehm neththn table ek penn.thith dekn kiynne table ek penn kiyl
-// 			<div className="w-full h-full flex justify-center items-center ">
-// 					<div className="w-[70px] h-[70px] border-[5px] border-gray-300 border-t-blue-900 rounded-full animate-spin">  {/*animate-spin ekn animate ekk hdnn plwn*/}
-// 					</div>
-// 			</div> :  
-// 			<table className="w-full text-center">
-// 				<thead>
-// 					<tr>
-// 						<th>Product ID</th>
-// 						<th>Name</th>
-// 						<th>Image</th>
-// 						<th>Labelled Price</th>
-// 						<th>Price</th>
-// 						<th>Stock</th>
-// 					</tr>
-// 				</thead>
-// 				{  // mek {} dl linne html athule javascript liyn nis
-//                     <tbody>
-// 					{products.map((item, index) => {  // map ekn krnne arrow ek athule thiyen ekkenk argen eyw run krno,item ekk kiyl methn kiynne.product e product thmi item widiyt mthnt pss wel enne,index kiyl kiynne run krnne kiweniyd kiyn ek
-// 						return (
-// 							<tr key={index}>   {/*methnt key ekk kiyl dnne genarete ekk wenkot newth newth ew awoth error ekk en nis*/}
-// 								<td>{item.productId}</td>
-// 								<td>{item.name}</td>
-// 								<td>
-//                                     <img src={item.images && item.images.length > 0 ? item.images[0] : '/placeholder-image.jpg'} className="w-[50px] h-[50px]" />
-//                                 </td>
-// 								<td>{item.labelledPrice}</td>
-// 								<td>{item.price}</td>
-// 								<td>{item.stock}</td>
-// 								<td>
-// 									<div className="flex flex-col items-center w-full">
-// 										<FaTrash className="text-[20px] text-red-500 mx-2 cursor-pointer" onClick={()=>{
-// 											deleteProduct(item.productId); //deleteProduct function ek run weno onClick dunnm psse
-// 										}}/>	   {/*mx-2 kiynne x akshye dekk athr gap ek.FaTrsh kiynne icon ek */}
-// 										<FaEdit onClick={()=>{
-// 											navigate ("/admin/edit-product/",{
-// 												state: item          //mekn wenne api products page eke idn edit-product page ekt yn kot e data tikth arn yn ek.e kiynne api edit krnn klin api klin dpu data e adl bar wl penno
-// 											})  //navigate ekn krnne edit product page ekt yn ek
-// 										}}  className="text-[20px] text-blue-500 mx-2 cursor-pointer"/>
-// 									</div>
-// 								</td>
-// 							</tr>
-// 						);
-// 					})}
-// 				</tbody> }
-// 			</table>}
-//         </div>
-//     )
-// }    
-
+      <p className="text-xs sm:text-sm text-zinc-500">{title}</p>
+      <h3 className="text-2xl sm:text-3xl font-black mt-1">{value}</h3>
+    </div>
+  );
+}

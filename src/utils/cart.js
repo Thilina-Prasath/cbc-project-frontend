@@ -23,11 +23,14 @@ export function removeFromCart(productId) {
      
 }
 
-export function addToCart(product, qty) {              //cart ekkt product ekk add krnn one nm awshy product eki qty eki dno
+export function addToCart(product, qty, color = "", size = "") {              //cart ekkt product ekk add krnn one nm awshy product eki qty eki dno
 	let cart = getCart();
 
 	let index = cart.findIndex((item) => {                   // mekn wenne api ewn productId ekt smn productId ekk thiyed blno.ehm bln kot samn productId ekk thibunoth e product ek thiyenne ankay index ekt dno(ex= ek thibune 3 weni the nm index ekt 3 pewreno).ehm productId ekk nththn index ek -1 weno.
-		return item.productId == product.productId;
+		return 
+        item.productId == product.productId &&
+        item.color === color &&
+        item.size === size
 	});
 
     if(index == -1){               // product ekk dentmth nethtn
@@ -37,7 +40,9 @@ export function addToCart(product, qty) {              //cart ekkt product ekk a
             image : product.images[0],
             price : product.price,
             labelledPrice : product.labelledPrice,
-            qty : qty
+            qty : qty,
+            color: color,
+            size: size
         }
     }else{
         const newQty = cart[index].qty + qty;             //idex ek hri then thibil awoth eke thiyen qty eki api den qty eki ekthu krno

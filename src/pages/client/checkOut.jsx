@@ -2,557 +2,528 @@ import axios from "axios";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { BiMinus, BiPlus, BiTrash } from "react-icons/bi";
+import {
+  FiArrowLeft,
+  FiLock,
+  FiMapPin,
+  FiShoppingBag,
+  FiTruck,
+  FiUser,
+  FiCreditCard,
+  FiCheckCircle,
+} from "react-icons/fi";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function CheckoutPage() {
-    const location = useLocation();
-    const navigate = useNavigate();
-    console.log("Cart from location state:", location.state?.cart);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    const [cart, setCart] = useState(location.state?.cart || []);
-    const [phoneNumber, setPhoneNumber] = useState("");
-    const [address, setAddress] = useState("");
-    const [fullName, setFullName] = useState("");
-    const [email, setEmail] = useState("");
-    const [city, setCity] = useState("");
-    const [postalCode, setPostalCode] = useState("");
-    const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-    const [errors, setErrors] = useState({});
+  const [cart, setCart] = useState(location.state?.cart || []);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [address, setAddress] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [errors, setErrors] = useState({});
 
-    // Redirect if no cart items
-    if (!cart || cart.length === 0) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-                <div className="text-center max-w-md mx-auto px-4">
-                    <div className="w-32 h-32 bg-gradient-to-r from-orange-100 to-red-100 rounded-full flex items-center justify-center mx-auto mb-8">
-                        <svg className="w-16 h-16 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">No Items to Checkout</h2>
-                    <p className="text-gray-600 mb-8">
-                        Your cart is empty. Please add some items before proceeding to checkout.
-                    </p>
-                    <Link 
-                        to="/products" 
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                    >
-                        Continue Shopping
-                    </Link>
-                </div>
-            </div>
-        );
+  const totalItems = cart.reduce(
+    (total, item) => total + Number(item.qty || 1),
+    0,
+  );
+
+  const subtotal = cart.reduce(
+    (total, item) => total + Number(item.price || 0) * Number(item.qty || 1),
+    0,
+  );
+
+  const formatPrice = (price) =>
+    Number(price || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+    });
+
+  const removeFromCart = (index) => {
+    setCart(cart.filter((_, i) => i !== index));
+  };
+
+  const changeQty = (index, amount) => {
+    const newCart = [...cart];
+    const newQty = Number(newCart[index].qty || 1) + amount;
+
+    if (newQty <= 0) {
+      removeFromCart(index);
+      return;
     }
 
-    function getTotal() {
-        let total = 0;
-        cart.forEach((item) => {
-            total += item.price * item.qty;
-        });
-        return total;
+    newCart[index].qty = newQty;
+    setCart(newCart);
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!fullName.trim()) newErrors.fullName = "Full name is required";
+    if (!email.trim()) newErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Invalid email";
+
+    if (!phoneNumber.trim()) newErrors.phoneNumber = "Phone number is required";
+    else if (!/^\d{10}$/.test(phoneNumber.replace(/\D/g, ""))) {
+      newErrors.phoneNumber = "Phone number should be 10 digits";
     }
 
-    function formatPrice(price) {
-        return Number(price).toFixed(2);
-    }
+    if (!address.trim()) newErrors.address = "Address is required";
+    if (!city.trim()) newErrors.city = "City is required";
+    if (!postalCode.trim()) newErrors.postalCode = "Postal code is required";
 
-    function removeFromCart(index) {
-        const newCart = cart.filter((item, i) => i !== index);
-        setCart(newCart);
-    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    function changeQty(index, qty) {
-        const newQty = cart[index].qty + qty;
-        if (newQty <= 0) {
-            removeFromCart(index);
-            return;
-        } else {
-            const newCart = [...cart];
-            newCart[index].qty = newQty;
-            setCart(newCart);
-        }
-    }
-
-    function validateForm() {
-        const newErrors = {};
-        
-        if (!fullName.trim()) newErrors.fullName = "Full name is required";
-        if (!email.trim()) newErrors.email = "Email is required";
-        else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Email is invalid";
-        if (!phoneNumber.trim()) newErrors.phoneNumber = "Phone number is required";
-        else if (!/^\d{10}$/.test(phoneNumber.replace(/\D/g, ''))) newErrors.phoneNumber = "Phone number should be 10 digits";
-        if (!address.trim()) newErrors.address = "Address is required";
-        if (!city.trim()) newErrors.city = "City is required";
-        if (!postalCode.trim()) newErrors.postalCode = "Postal code is required";
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    }
-
-    function validateCartData() {
-        const invalidItems = cart.filter(item => {
-            return !item.productId || 
-                   !item.qty || 
-                   item.qty <= 0 || 
-                   typeof item.productId !== 'string';
-        });
-        
-        if (invalidItems.length > 0) {
-            console.error("Invalid cart items:", invalidItems);
-            return false;
-        }
-        
-        return true;
-    }
-
-    async function placeOrder() {
-        console.log("=== STARTING ORDER PLACEMENT ===");
-        console.log("Cart data:", cart);
-        console.log("Form data:", {
-            fullName,
-            email,
-            phoneNumber,
-            address,
-            city,
-            postalCode
-        });
-        
-        if (!validateForm()) {
-            console.log("❌ Form validation failed");
-            toast.error("Please fill in all required fields correctly");
-            return;
-        }
-        
-        if (!validateCartData()) {
-            console.log("❌ Cart validation failed");
-            toast.error("Invalid items in cart. Please refresh and try again.");
-            return;
-        }
-
-        setIsPlacingOrder(true);
-
-        const token = localStorage.getItem("token");
-        console.log("Token check:", token ? `Token exists (${token.substring(0, 20)}...)` : "❌ No token found");
-        
-        if (!token) {
-            toast.error("Please login to place order");
-            setIsPlacingOrder(false);
-            return;
-        }
-
-        const orderInformation = {
-            products: cart.map(item => ({
-                productId: item.productId,
-                qty: item.qty,
-            })),
-            name: fullName,        // Backend expects 'name' not 'fullName'
-            email: email,
-            phone: phoneNumber,
-            address: `${address}, ${city}, ${postalCode}`, // Combine address fields
-        };
-
-        const apiUrl = import.meta.env.VITE_BACKEND_URL + "/api/orders";
-
-        // Enhanced debug logs
-        console.log("=== API REQUEST DETAILS ===");
-        console.log("🌐 API URL:", apiUrl);
-        console.log("📦 Order payload:", JSON.stringify(orderInformation, null, 2));
-        console.log("🔑 Authorization header:", `Bearer ${token.substring(0, 20)}...`);
-        console.log("📨 Making POST request...");
-
-        try {
-            const res = await axios.post(apiUrl, orderInformation, {
-                headers: {
-                    Authorization: "Bearer " + token,
-                    "Content-Type": "application/json"
-                },
-            });
-            
-            console.log("✅ SUCCESS! Response:", res.data);
-            toast.success("Order placed successfully!");
-            
-            // Clear form and redirect
-            setCart([]);
-            setTimeout(() => {
-                navigate("/products");
-            }, 2000);
-            
-        } catch (err) {
-            console.log("=== ERROR DETAILS ===");
-            console.error("❌ Full error object:", err);
-            
-            if (err.response) {
-                console.log("📤 Request was made and server responded with error");
-                console.error("📊 Status:", err.response.status);
-                console.error("📋 Response data:", err.response.data);
-                console.error("📑 Response headers:", err.response.headers);
-                console.error("⚙️ Request config:", err.config);
-                
-                // Try to extract more details from response
-                if (err.response.data) {
-                    console.log("🔍 Detailed server response:", JSON.stringify(err.response.data, null, 2));
-                }
-            } else if (err.request) {
-                console.log("📤 Request was made but no response received");
-                console.error("📨 Request details:", err.request);
-            } else {
-                console.log("⚠️ Error in setting up request");
-                console.error("Error message:", err.message);
-            }
-            
-            // More detailed error handling
-            let errorMessage = "Failed to create order";
-            
-            if (err.response) {
-                if (err.response.data?.message) {
-                    errorMessage = `Server error: ${err.response.data.message}`;
-                } else if (err.response.data?.error) {
-                    errorMessage = `Server error: ${err.response.data.error}`;
-                } else if (err.response.status === 401) {
-                    errorMessage = "Authentication failed. Please login again.";
-                    localStorage.removeItem("token");
-                    navigate("/login");
-                    return;
-                } else if (err.response.status === 403) {
-                    errorMessage = "Access denied. Please check your permissions.";
-                } else if (err.response.status === 404) {
-                    errorMessage = "Order endpoint not found. Please contact support.";
-                } else if (err.response.status === 500) {
-                    errorMessage = `Server internal error (500). Check backend logs.`;
-                } else {
-                    errorMessage = `Server error: ${err.response.status}`;
-                }
-            } else if (err.request) {
-                errorMessage = "Network error. Please check your connection and backend server.";
-            }
-            
-            console.log("🚨 Final error message:", errorMessage);
-            toast.error(errorMessage);
-            
-        } finally {
-            setIsPlacingOrder(false);
-            console.log("=== ORDER PLACEMENT FINISHED ===");
-        }
-    }
-
-    const totalItems = cart.reduce((total, item) => total + item.qty, 0);
-
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white py-12">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="text-center">
-                        <h1 className="text-4xl font-bold mb-4">Secure Checkout</h1>
-                        <p className="text-xl opacity-90">
-                            Review your order and complete your purchase
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="max-w-7xl mx-auto px-4 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Order Items */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Customer Information */}
-                        <div className="bg-white rounded-2xl shadow-xl p-6">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                Customer Information
-                            </h2>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Full Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
-                                            errors.fullName 
-                                                ? 'border-red-300 focus:ring-red-200' 
-                                                : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
-                                        placeholder="Enter your full name"
-                                    />
-                                    {errors.fullName && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Email Address *
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
-                                            errors.email 
-                                                ? 'border-red-300 focus:ring-red-200' 
-                                                : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
-                                        placeholder="Enter your email"
-                                    />
-                                    {errors.email && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Phone Number *
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={phoneNumber}
-                                        onChange={(e) => setPhoneNumber(e.target.value)}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
-                                            errors.phoneNumber 
-                                                ? 'border-red-300 focus:ring-red-200' 
-                                                : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
-                                        placeholder="Enter your phone number"
-                                    />
-                                    {errors.phoneNumber && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        City *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={city}
-                                        onChange={(e) => setCity(e.target.value)}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
-                                            errors.city 
-                                                ? 'border-red-300 focus:ring-red-200' 
-                                                : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
-                                        placeholder="Enter your city"
-                                    />
-                                    {errors.city && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.city}</p>
-                                    )}
-                                </div>
-
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Address *
-                                    </label>
-                                    <textarea
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        rows="3"
-                                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all resize-none ${
-                                            errors.address 
-                                                ? 'border-red-300 focus:ring-red-200' 
-                                                : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
-                                        placeholder="Enter your full address"
-                                    />
-                                    {errors.address && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.address}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Postal Code *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={postalCode}
-                                        onChange={(e) => setPostalCode(e.target.value)}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
-                                            errors.postalCode 
-                                                ? 'border-red-300 focus:ring-red-200' 
-                                                : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
-                                        placeholder="Enter postal code"
-                                    />
-                                    {errors.postalCode && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.postalCode}</p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Order Items */}
-                        <div className="bg-white rounded-2xl shadow-xl p-6">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                </svg>
-                                Order Items ({totalItems})
-                            </h2>
-                            
-                            <div className="space-y-4">
-                                {cart.map((item, index) => (
-                                    <div key={index} className="bg-gray-50 rounded-xl p-4 flex items-center space-x-4">
-                                        <img 
-                                            src={item.image} 
-                                            alt={item.name}
-                                            className="w-16 h-16 object-cover rounded-lg"
-                                            onError={(e) => {
-                                                e.target.src = '/placeholder-image.png'; // Fallback image
-                                            }}
-                                        />
-                                        
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                                            <p className="text-sm text-gray-500">ID: {item.productId}</p>
-                                            <div className="flex items-center space-x-2 mt-1">
-                                                {item.labelledPrice && Number(item.labelledPrice) > Number(item.price) ? (
-                                                    <>
-                                                        <span className="text-sm text-gray-400 line-through">
-                                                            Rs. {formatPrice(item.labelledPrice)}
-                                                        </span>
-                                                        <span className="text-lg font-bold text-blue-600">
-                                                            Rs. {formatPrice(item.price)}
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <span className="text-lg font-bold text-blue-600">
-                                                        Rs. {formatPrice(item.price)}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center space-x-2">
-                                            <button
-                                                onClick={() => changeQty(index, -1)}
-                                                className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                                            >
-                                                <BiMinus />
-                                            </button>
-                                            <span className="w-8 text-center font-semibold">{item.qty}</span>
-                                            <button
-                                                onClick={() => changeQty(index, 1)}
-                                                className="w-8 h-8 rounded-lg bg-blue-100 hover:bg-blue-200 flex items-center justify-center transition-colors"
-                                            >
-                                                <BiPlus />
-                                            </button>
-                                        </div>
-
-                                        <div className="text-right">
-                                            <div className="font-bold text-gray-900">
-                                                Rs. {formatPrice(item.price * item.qty)}
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => removeFromCart(index)}
-                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                        >
-                                            <BiTrash />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Order Summary - Sticky */}
-                    <div className="lg:col-span-1">
-                        <div className="sticky top-24">
-                            <div className="bg-white rounded-2xl shadow-xl p-6">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    Order Summary
-                                </h2>
-
-                                <div className="space-y-4 mb-6">
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Subtotal ({totalItems} items)</span>
-                                        <span>Rs. {formatPrice(getTotal())}</span>
-                                    </div>
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Shipping</span>
-                                        <span className="text-green-600 font-medium">FREE</span>
-                                    </div>
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Tax</span>
-                                        <span>Rs. 0.00</span>
-                                    </div>
-                                    <div className="border-t pt-4">
-                                        <div className="flex justify-between text-2xl font-bold text-gray-900">
-                                            <span>Total</span>
-                                            <span>Rs. {formatPrice(getTotal())}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Place Order Button */}
-                                <button
-                                    onClick={placeOrder}
-                                    disabled={isPlacingOrder}
-                                    className={`w-full py-4 px-6 rounded-2xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 ${
-                                        isPlacingOrder
-                                            ? 'bg-gray-400 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
-                                    }`}
-                                >
-                                    {isPlacingOrder ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            <span>Processing...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                            </svg>
-                                            <span>Place Order</span>
-                                        </>
-                                    )}
-                                </button>
-
-                                {/* Security Badges */}
-                                <div className="mt-6 pt-6 border-t border-gray-200">
-                                    <div className="grid grid-cols-3 gap-4 text-center">
-                                        <div>
-                                            <div className="text-2xl mb-1">🔒</div>
-                                            <div className="text-xs text-gray-600">Secure Payment</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-2xl mb-1">🚚</div>
-                                            <div className="text-xs text-gray-600">Free Delivery</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-2xl mb-1">↩️</div>
-                                            <div className="text-xs text-gray-600">Easy Returns</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Back to Cart */}
-                                <Link 
-                                    to="/cart"
-                                    className="w-full mt-4 bg-gray-100 text-gray-700 py-3 px-6 rounded-2xl font-medium hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
-                                    <span>Back to Cart</span>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  const validateCartData = () => {
+    return cart.every(
+      (item) =>
+        item.productId && item.qty > 0 && typeof item.productId === "string",
     );
+  };
+
+  const placeOrder = async () => {
+    if (!validateForm()) {
+      toast.error("Please fill all required fields correctly");
+      return;
+    }
+
+    if (!validateCartData()) {
+      toast.error("Invalid cart items. Please refresh and try again.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      toast.error("Please login to place order");
+      return;
+    }
+
+    setIsPlacingOrder(true);
+
+    const orderInformation = {
+      products: cart.map((item) => ({
+        productId: item.productId,
+        qty: item.qty,
+        color: item.color || "",
+        size: item.size || "",
+      })),
+      name: fullName,
+      email,
+      phone: phoneNumber,
+      address: `${address}, ${city}, ${postalCode}`,
+    };
+
+    try {
+      const res = await axios.post(
+        import.meta.env.VITE_BACKEND_URL + "/api/orders",
+        orderInformation,
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const { order, payhereConfig } = res.data;
+
+      window.payhere.onCompleted = function () {
+        toast.success("Payment completed successfully");
+        setCart([]);
+        navigate("/products");
+      };
+
+      window.payhere.onDismissed = function () {
+        toast.error("Payment window closed");
+        setIsPlacingOrder(false);
+      };
+
+      window.payhere.onError = function (error) {
+        console.log("PayHere Error:", error);
+        toast.error("Payment failed");
+        setIsPlacingOrder(false);
+      };
+
+      const payment = {
+        sandbox: true,
+        merchant_id: payhereConfig.merchantId,
+        return_url: "http://localhost:5173/products",
+        cancel_url: "http://localhost:5173/checkout",
+        notify_url:
+          "https://deserved-dipsacaceous-shawana.ngrok-free.dev/api/orders/notify",
+        order_id: order.orderId,
+        items: `Order ID: ${order.orderId}`,
+        amount: payhereConfig.amount,
+        currency: payhereConfig.currency,
+        hash: payhereConfig.hash,
+        first_name: fullName,
+        last_name: "",
+        email,
+        phone: phoneNumber,
+        address,
+        city,
+        country: "Sri Lanka",
+      };
+
+      window.payhere.startPayment(payment);
+    } catch (err) {
+      console.error(err);
+
+      if (err.response?.status === 401) {
+        toast.error("Please login again");
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+
+      toast.error(err.response?.data?.message || "Failed to create order");
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
+  const InputField = ({
+    label,
+    value,
+    setValue,
+    error,
+    type = "text",
+    placeholder,
+  }) => (
+    <div>
+      <label className="block text-xs sm:text-sm font-bold text-zinc-700 mb-1.5 sm:mb-2">
+        {label}
+      </label>
+
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full rounded-xl sm:rounded-2xl border px-3.5 sm:px-4 py-3 sm:py-3.5 bg-[#FAF7F2] outline-none transition focus:bg-white text-sm sm:text-base ${
+          error
+            ? "border-red-300 focus:border-red-500"
+            : "border-zinc-200 focus:border-[#9b6b43]"
+        }`}
+      />
+
+      {error && <p className="text-red-500 text-xs sm:text-sm mt-1">{error}</p>}
+    </div>
+  );
+
+  if (!cart || cart.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl sm:rounded-[2rem] p-6 sm:p-8 md:p-12 text-center shadow-sm border border-zinc-100 max-w-md w-full">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#FAF7F2] flex items-center justify-center mx-auto mb-4 sm:mb-6">
+            <FiShoppingBag className="text-3xl sm:text-4xl text-[#9b6b43]" />
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-black mb-2 sm:mb-3">
+            Your cart is empty
+          </h2>
+
+          <p className="text-zinc-500 mb-6 sm:mb-8 text-sm sm:text-base">
+            Add some products before continuing to checkout.
+          </p>
+
+          <Link
+            to="/products"
+            className="inline-flex items-center justify-center gap-2 bg-zinc-950 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full font-bold text-sm sm:text-base hover:bg-zinc-800 transition"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FAF7F2] text-zinc-900">
+      <section className="bg-[radial-gradient(circle_at_top_left,#f3d9c4,transparent_35%),linear-gradient(135deg,#fffaf5,#f6f1eb,#ffffff)] border-b border-zinc-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-12">
+          <Link
+            to="/cart"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-zinc-500 hover:text-[#9b6b43] mb-5 sm:mb-8 transition"
+          >
+            <FiArrowLeft /> Back to Cart
+          </Link>
+
+          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur px-4 sm:px-5 py-1.5 sm:py-2 rounded-full shadow-sm text-xs sm:text-sm font-bold text-[#9b6b43]">
+            <FiCreditCard />
+            Secure Checkout
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black mt-3 sm:mt-4 tracking-tight">
+            Checkout
+          </h1>
+
+          <p className="text-zinc-500 mt-2 sm:mt-3 text-sm sm:text-base">
+            Complete your delivery details and confirm your order securely.
+          </p>
+        </div>
+      </section>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-6 sm:py-10">
+        <div className="grid lg:grid-cols-[1fr_390px] gap-5 sm:gap-8 items-start">
+          <div className="space-y-5 sm:space-y-8">
+            <section className="bg-white rounded-2xl sm:rounded-[2rem] border border-zinc-100 shadow-sm p-4 sm:p-6 md:p-8">
+              <div className="flex items-center gap-2.5 sm:gap-3 mb-5 sm:mb-7">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
+                  <FiUser className="text-lg sm:text-xl text-[#9b6b43]" />
+                </div>
+
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black">
+                    Customer Details
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-500">
+                    Enter your contact information.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4 sm:gap-5">
+                <InputField
+                  label="Full Name"
+                  value={fullName}
+                  setValue={setFullName}
+                  error={errors.fullName}
+                  placeholder="Enter full name"
+                />
+
+                <InputField
+                  label="Email Address"
+                  value={email}
+                  setValue={setEmail}
+                  error={errors.email}
+                  type="email"
+                  placeholder="example@email.com"
+                />
+
+                <InputField
+                  label="Phone Number"
+                  value={phoneNumber}
+                  setValue={setPhoneNumber}
+                  error={errors.phoneNumber}
+                  type="tel"
+                  placeholder="0771234567"
+                />
+
+                <InputField
+                  label="City"
+                  value={city}
+                  setValue={setCity}
+                  error={errors.city}
+                  placeholder="Enter city"
+                />
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs sm:text-sm font-bold text-zinc-700 mb-1.5 sm:mb-2">
+                    Address
+                  </label>
+
+                  <textarea
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    rows={4}
+                    placeholder="Enter your full address"
+                    className={`w-full rounded-xl sm:rounded-2xl border px-3.5 sm:px-4 py-3 sm:py-3.5 bg-[#FAF7F2] outline-none resize-none transition focus:bg-white text-sm sm:text-base ${
+                      errors.address
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-zinc-200 focus:border-[#9b6b43]"
+                    }`}
+                  />
+
+                  {errors.address && (
+                    <p className="text-red-500 text-xs sm:text-sm mt-1">
+                      {errors.address}
+                    </p>
+                  )}
+                </div>
+
+                <InputField
+                  label="Postal Code"
+                  value={postalCode}
+                  setValue={setPostalCode}
+                  error={errors.postalCode}
+                  placeholder="Enter postal code"
+                />
+              </div>
+            </section>
+
+            <section className="bg-white rounded-2xl sm:rounded-[2rem] border border-zinc-100 shadow-sm p-4 sm:p-6 md:p-8">
+              <div className="flex items-center gap-2.5 sm:gap-3 mb-5 sm:mb-7">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#FAF7F2] flex items-center justify-center shrink-0">
+                  <FiShoppingBag className="text-lg sm:text-xl text-[#9b6b43]" />
+                </div>
+
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black">
+                    Order Items
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-500">
+                    {totalItems} item{totalItems > 1 ? "s" : ""} in your order.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 sm:space-y-4">
+                {cart.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-2xl sm:rounded-3xl bg-[#FAF7F2] border border-zinc-100 p-3 sm:p-4 hover:bg-white hover:shadow-sm transition"
+                  >
+                    <img
+                      src={item.image || item.images?.[0]}
+                      alt={item.name}
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder-image.png";
+                      }}
+                      className="w-full sm:w-24 h-36 sm:h-24 rounded-xl sm:rounded-2xl object-cover bg-white"
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-black truncate text-sm sm:text-base">
+                        {item.name}
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-zinc-500 mt-1">
+                        {item.size && `Size: ${item.size}`}
+                        {item.size && item.color && " • "}
+                        {item.color && `Color: ${item.color}`}
+                      </p>
+
+                      <p className="font-bold mt-1.5 sm:mt-2 text-sm sm:text-base">
+                        Rs. {formatPrice(item.price)}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                      <div className="flex items-center bg-white rounded-xl sm:rounded-2xl border border-zinc-100 p-1">
+                        <button
+                          onClick={() => changeQty(index, -1)}
+                          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl hover:bg-zinc-100 transition"
+                        >
+                          <BiMinus />
+                        </button>
+
+                        <span className="w-8 sm:w-10 text-center font-black text-sm sm:text-base">
+                          {item.qty}
+                        </span>
+
+                        <button
+                          onClick={() => changeQty(index, 1)}
+                          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl hover:bg-zinc-100 transition"
+                        >
+                          <BiPlus />
+                        </button>
+                      </div>
+
+                      <p className="font-black min-w-[90px] sm:min-w-[100px] text-right text-sm sm:text-base">
+                        Rs. {formatPrice(Number(item.price) * Number(item.qty))}
+                      </p>
+
+                      <button
+                        onClick={() => removeFromCart(index)}
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition shrink-0"
+                      >
+                        <BiTrash />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <aside className="lg:sticky lg:top-24">
+            <div className="bg-white rounded-2xl sm:rounded-[2rem] border border-zinc-100 shadow-sm p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-black mb-4 sm:mb-6">
+                Order Summary
+              </h2>
+
+              <div className="space-y-3 sm:space-y-4 text-xs sm:text-sm">
+                <div className="flex justify-between text-zinc-500">
+                  <span>Subtotal ({totalItems} items)</span>
+                  <span className="font-semibold text-zinc-900">
+                    Rs. {formatPrice(subtotal)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-zinc-500">
+                  <span>Shipping</span>
+                  <span className="font-semibold text-emerald-600">FREE</span>
+                </div>
+
+                <div className="flex justify-between text-zinc-500">
+                  <span>Tax</span>
+                  <span className="font-semibold text-zinc-900">Rs. 0.00</span>
+                </div>
+              </div>
+
+              <div className="border-t border-zinc-100 mt-4 sm:mt-6 pt-4 sm:pt-6 flex items-center justify-between">
+                <span className="text-base sm:text-lg font-black">Total</span>
+                <span className="text-2xl sm:text-3xl font-black">
+                  Rs. {formatPrice(subtotal)}
+                </span>
+              </div>
+
+              <button
+                onClick={placeOrder}
+                disabled={isPlacingOrder}
+                className="w-full mt-5 sm:mt-7 bg-zinc-950 text-white py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2 hover:bg-zinc-800 transition disabled:bg-zinc-400"
+              >
+                <FiLock />
+                {isPlacingOrder ? "Processing..." : "Place Order"}
+              </button>
+
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-5 sm:mt-6 pt-5 sm:pt-6 border-t border-zinc-100">
+                {[
+                  [FiLock, "Secure"],
+                  [FiTruck, "Free Delivery"],
+                  [FiMapPin, "Sri Lanka"],
+                ].map(([Icon, label]) => (
+                  <div key={label} className="text-center">
+                    <Icon
+                      className="mx-auto mb-1.5 sm:mb-2 text-[#9b6b43]"
+                      size={16}
+                    />
+                    <p className="text-[10px] sm:text-xs text-zinc-500">
+                      {label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 sm:mt-6 rounded-xl sm:rounded-2xl bg-[#FAF7F2] p-3 sm:p-4 flex items-start gap-2.5 sm:gap-3">
+                <FiCheckCircle
+                  className="text-[#9b6b43] mt-0.5 sm:mt-1 shrink-0"
+                  size={16}
+                />
+                <p className="text-xs sm:text-sm text-zinc-500">
+                  Your payment is processed securely through PayHere.
+                </p>
+              </div>
+
+              <Link
+                to="/cart"
+                className="w-full mt-4 sm:mt-5 bg-[#FAF7F2] text-zinc-700 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 hover:bg-zinc-200 transition"
+              >
+                <FiArrowLeft />
+                Back to Cart
+              </Link>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  );
 }
